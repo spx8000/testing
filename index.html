@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Birthday Card Writer</title>
+  <style>
+    :root { --bg:#0b1220; --card:#121a2b; --muted:#8ea0c2; --text:#e8eefc; --accent:#7aa2ff; --border:#22304d; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1000px 600px at 20% 0%, #17264a 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+    .wrap { max-width: 980px; margin: 40px auto; padding: 0 16px; }
+    .title { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+    h1 { margin:0; font-size: 28px; }
+    .subtitle { color: var(--muted); margin-top: 8px; }
+    .grid { display:grid; gap:16px; grid-template-columns: 1fr; margin-top: 18px; }
+    @media (min-width: 860px){ .grid{ grid-template-columns: 380px 1fr; } }
+    .card {
+      background: color-mix(in oklab, var(--card) 92%, black 8%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.35);
+    }
+    label { display:block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+    input, select, textarea {
+      width:100%; border-radius: 12px; border: 1px solid var(--border);
+      background: #0f1729; color: var(--text);
+      padding: 10px 12px; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); }
+    .row { display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
+    .row3 { display:grid; gap:12px; grid-template-columns: 1fr 1fr 1fr; }
+    .btns { display:flex; gap:10px; margin-top: 14px; flex-wrap:wrap; }
+    button{
+      border:1px solid var(--border); background:#0f1729; color:var(--text);
+      padding: 10px 12px; border-radius: 12px; cursor:pointer;
+    }
+    button.primary{ background: linear-gradient(135deg, #2f5bff, #7aa2ff); border-color: transparent; color:#071022; font-weight:700;}
+    button:hover{ filter: brightness(1.08); }
+    .outputHeader { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .pill { font-size:12px; color: var(--muted); border:1px solid var(--border); padding:6px 10px; border-radius: 999px; }
+    textarea#output { min-height: 260px; resize: vertical; line-height: 1.4; }
+    .tiny { font-size: 12px; color: var(--muted); margin-top: 10px; }
+    .toast {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+      background: rgba(18,26,43,.95); border:1px solid var(--border);
+      color: var(--text); padding: 10px 12px; border-radius: 12px;
+      opacity: 0; pointer-events:none; transition: opacity .18s ease;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <h1>Birthday Card Writer 🎂</h1>
+      <span class="pill">funny messages from name + age + hobby</span>
+    </div>
+    <div class="subtitle">Fill in a few details, then generate a message you can copy into a card.</div>
+
+    <div class="grid">
+      <div class="card">
+        <label for="name">Person’s name</label>
+        <input id="name" placeholder="e.g., Alex" autocomplete="off" />
+
+        <div class="row">
+          <div>
+            <label for="age">Age</label>
+            <input id="age" type="number" min="0" max="120" placeholder="e.g., 35" />
+          </div>
+          <div>
+            <label for="hobby">Hobby / interest</label>
+            <input id="hobby" placeholder="e.g., golf, baking, climbing" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="row3">
+          <div>
+            <label for="style">Style</label>
+            <select id="style">
+              <option value="warm-funny">Warm + funny</option>
+              <option value="roast-light">Light roast</option>
+              <option value="punny">Punny</option>
+              <option value="short">Short + punchy</option>
+              <option value="sappy">Sincere with a joke</option>
+            </select>
+          </div>
+          <div>
+            <label for="length">Length</label>
+            <select id="length">
+              <option value="2">2 lines</option>
+              <option value="4" selected>4 lines</option>
+              <option value="6">6 lines</option>
+            </select>
+          </div>
+          <div>
+            <label for="extras">Extras</label>
+            <select id="extras">
+              <option value="none" selected>None</option>
+              <option value="inside-joke">Add a tiny “inside joke” placeholder</option>
+              <option value="toast">Add a mini birthday “toast”</option>
+              <option value="emoji">Add a few emojis</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="generate">Generate message</button>
+          <button id="shuffle">Shuffle</button>
+          <button id="clear">Clear</button>
+        </div>
+
+        <div class="tiny">
+          Tip: If you leave age blank, it’ll keep it playful without mentioning a number.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="outputHeader">
+          <div>
+            <div style="font-weight:700; font-size:14px;">Your message</div>
+            <div class="tiny">Edit anything before you copy—this is your card!</div>
+          </div>
+          <div class="btns" style="margin:0;">
+            <button id="copy">Copy</button>
+            <button id="regen">Regenerate</button>
+          </div>
+        </div>
+        <label for="output"> </label>
+        <textarea id="output" placeholder="Your birthday message will appear here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    // --- Small utility helpers ---
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const cap = (s) => (s || "").trim().replace(/^\w/, c => c.toUpperCase());
+    const safe = (s) => (s || "").trim();
+    const isNum = (v) => v !== "" && v !== null && !Number.isNaN(Number(v));
+
+    function showToast(msg="Copied!") {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 900);
+    }
+
+    // --- Phrase banks ---
+    const openers = [
+      "Happy Birthday, {name}!",
+      "Hey {name}—happy birthday!",
+      "{name}! It’s your birthday!",
+      "Wishing you the happiest birthday, {name}!",
+      "Dear {name}, congratulations on surviving another year!"
+    ];
+
+    const ageLines = [
+      "You don’t look a day over {ageMinus}… give or take {agePlus}.",
+      "{age}? Iconic. Legendary. Slightly suspicious (in a good way).",
+      "At {age}, you’ve unlocked a new level of wisdom… and new back noises.",
+      "{age} looks great on you. Like, shockingly great."
+    ];
+
+    const noAgeLines = [
+      "Another year older, another year better at pretending you have it together.",
+      "You’re aging like fine wine—stored properly and occasionally screaming.",
+      "Another lap around the sun, and you’re still the main character."
+    ];
+
+    const hobbyLines = [
+      "May your year be full of {hobby} and zero awkward small talk.",
+      "Hope you get extra time for {hobby}—and fewer chores in exchange.",
+      "Wishing you personal bests in {hobby} and snacks in every pocket.",
+      "May your {hobby} skills level up faster than your responsibilities."
+    ];
+
+    const punchLines = [
+      "Celebrate big. Nap hard. Repeat as needed.",
+      "Eat cake like it’s a sport. You’d medal.",
+      "If anyone asks, we’re calling this ‘vintage.’",
+      "Today’s goal: joy. Tomorrow’s goal: leftovers.",
+      "You deserve a birthday as awesome as your ‘I’m fine’ face."
+    ];
+
+    const closers = [
+      "—With love,",
+      "—Cheers,",
+      "—Big hugs,",
+      "—Your biggest fan,",
+      "—Stay fabulous,"
+    ];
+
+    const puns = [
+      "Hope your birthday is *un-brrr-lievable*… because you’re cool like that.",
+      "Let’s taco ’bout how awesome you are today.",
+      "You’re nacho average birthday legend.",
+      "Have an egg-cellent birthday. (No explanation.)",
+      "You’re one in a melon. Happy birthday!"
+    ];
+
+    const lightRoast = [
+      "You’re not older… you’re just more internationally recognized.",
+      "Congrats on being old enough to know better and still doing it anyway.",
+      "Another year wiser—yet somehow still allergic to going to bed on time.",
+      "You’re aging gracefully… like a phone with 2% battery."
+    ];
+
+    function buildMessage({ name, age, hobby, style, length, extras }) {
+      const n = cap(name) || "Friend";
+      const h = safe(hobby) || "whatever you’re currently obsessed with";
+      const linesTarget = Number(length);
+
+      const ageMinus = isNum(age) ? Math.max(0, Number(age) - 10) : "";
+      const agePlus  = isNum(age) ? Math.min(200, Number(age) + 7) : "";
+
+      let lines = [];
+      lines.push(pick(openers).replaceAll("{name}", n));
+
+      // Style-specific 2nd line
+      if (style === "punny") {
+        lines.push(pick(puns));
+      } else if (style === "roast-light") {
+        lines.push(pick(lightRoast));
+      } else if (style === "short") {
+        lines.push("Hope today is easy, hilarious, and 100% about you.");
+      } else if (style === "sappy") {
+        lines.push("You make life lighter and funnier just by being in it.");
+      } else { // warm-funny
+        lines.push("Hope your day is full of laughs, cake, and zero emails.");
+      }
+
+      // Age line (optional)
+      if (isNum(age)) {
+        lines.push(
+          pick(ageLines)
+            .replaceAll("{age}", String(age))
+            .replaceAll("{ageMinus}", String(ageMinus))
+            .replaceAll("{agePlus}", String(agePlus))
+        );
+      } else {
+        lines.push(pick(noAgeLines));
+      }
+
+      // Hobby line
+      lines.push(pick(hobbyLines).replaceAll("{hobby}", h));
+
+      // Punch line
+      lines.push(pick(punchLines));
+
+      // Extras
+      if (extras === "inside-joke") lines.push("P.S. [insert our inside joke here] 😄");
+      if (extras === "toast") lines.push("Here’s to you: more fun, more peace, and more good surprises. 🥂");
+      if (extras === "emoji") lines.push("🎉🎂✨");
+
+      // Close
+      lines.push(pick(closers));
+
+      // Trim/shape to desired length-ish (keep opener + closer)
+      // Ensure at least 2 lines: opener + closer
+      const opener = lines[0];
+      const closer = lines[lines.length - 1];
+      let middle = lines.slice(1, -1);
+
+      // If "short", compress middle
+      if (style === "short") {
+        middle = [
+          "Wishing you a day that feels like a weekend.",
+          `More ${h}, less nonsense.`
+        ];
+      }
+
+      // Target total lines includes opener+closer
+      const totalTarget = Math.max(2, linesTarget);
+      const middleTarget = Math.max(0, totalTarget - 2);
+
+      // Choose middleTarget lines from middle without duplicates if possible
+      let chosen = [];
+      let pool = [...middle];
+      while (chosen.length < middleTarget && pool.length) {
+        const idx = Math.floor(Math.random() * pool.length);
+        chosen.push(pool.splice(idx, 1)[0]);
+      }
+
+      return [opener, ...chosen, closer].join("\n");
+    }
+
+    // --- Wire up UI ---
+    const el = (id) => document.getElementById(id);
+
+    function generate() {
+      const msg = buildMessage({
+        name: el("name").value,
+        age: el("age").value,
+        hobby: el("hobby").value,
+        style: el("style").value,
+        length: el("length").value,
+        extras: el("extras").value
+      });
+      el("output").value = msg;
+    }
+
+    el("generate").addEventListener("click", generate);
+    el("regen").addEventListener("click", generate);
+    el("shuffle").addEventListener("click", () => generate());
+    el("clear").addEventListener("click", () => {
+      el("name").value = "";
+      el("age").value = "";
+      el("hobby").value = "";
+      el("output").value = "";
+    });
+
+    el("copy").addEventListener("click", async () => {
+      const text = el("output").value.trim();
+      if (!text) return showToast("Nothing to copy");
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Copied!");
+      } catch {
+        // Fallback
+        el("output").select();
+        document.execCommand("copy");
+        showToast("Copied!");
+      }
+    });
+
+    // Generate a starter example
+    el("name").value = "Jamie";
+    el("age").value = "30";
+    el("hobby").value = "golf";
+    generate();
+  </script>
+</body>
+</html>
