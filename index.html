@@ -52,6 +52,28 @@
       opacity: 0; pointer-events:none; transition: opacity .18s ease;
     }
     .toast.show { opacity: 1; }
+  /* Toggle */
+.toggle{
+  display:flex; align-items:center; gap:10px;
+  border:1px solid var(--border);
+  padding:6px 10px; border-radius:999px;
+  color: var(--muted);
+}
+.toggle input{ width: 16px; height: 16px; }
+
+/* Pastel theme overrides */
+body.pastel{
+  --bg:#fff6fb;
+  --card:#ffffff;
+  --muted:#5b5b73;
+  --text:#1b1b2a;
+  --accent:#ff7ab6;
+  --border:#f0d7e6;
+  background: radial-gradient(1000px 600px at 20% 0%, #ffe6f2 0%, var(--bg) 60%);
+}
+body.pastel input, body.pastel select, body.pastel textarea{
+  background:#fff; color: var(--text);
+}
   </style>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0b1220">
@@ -63,6 +85,10 @@
     <div class="title">
       <h1>Birthday Card Writer 🎂</h1>
       <span class="pill">funny messages from name + age + hobby</span>
+      <label class="toggle">
+        <input type="checkbox" id="themeToggle" />
+        <span>Pastel mode</span>
+      </label>
     </div>
     <div class="subtitle">Fill in a few details, then generate a message you can copy into a card.</div>
 
@@ -135,7 +161,17 @@
           </div>
         </div>
         <label for="output"> </label>
-        <textarea id="output" placeholder="Your birthday message will appear here..."></textarea>
+        <div id="preview" style="
+  white-space: pre-wrap;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  min-height: 260px;
+  line-height: 1.5;
+"></div>
+
+<textarea id="output" placeholder="(Optional) Edit the message here..." style="margin-top:10px; min-height:120px;"></textarea>
       </div>
     </div>
   </div>
@@ -143,6 +179,55 @@
   <div class="toast" id="toast">Copied!</div>
 
   <script>
+    function confettiBurst() {
+  const c = document.getElementById("confetti");
+  const ctx = c.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    c.width = Math.floor(window.innerWidth * dpr);
+    c.height = Math.floor(window.innerHeight * dpr);
+    c.style.width = window.innerWidth + "px";
+    c.style.height = window.innerHeight + "px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+
+  const pieces = Array.from({length: 120}, () => ({
+    x: Math.random() * window.innerWidth,
+    y: -20 - Math.random() * 200,
+    vx: -2 + Math.random() * 4,
+    vy: 3 + Math.random() * 6,
+    r: 2 + Math.random() * 4,
+    a: 1,
+    rot: Math.random() * Math.PI
+  }));
+
+  let t = 0;
+  const maxT = 70;
+
+  (function draw(){
+    ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05; // gravity
+      p.a -= 1/maxT;
+
+      ctx.globalAlpha = Math.max(0, p.a);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot += 0.1);
+      ctx.fillStyle = `hsl(${Math.floor(Math.random()*360)}, 90%, 65%)`;
+      ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2);
+      ctx.restore();
+    });
+
+    t++;
+    if (t < maxT) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+  })();
+}
     // --- Small utility helpers ---
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const cap = (s) => (s || "").trim().replace(/^\w/, c => c.toUpperCase());
@@ -299,17 +384,23 @@
     const el = (id) => document.getElementById(id);
 
     function generate() {
-      const msg = buildMessage({
-        name: el("name").value,
-        age: el("age").value,
-        hobby: el("hobby").value,
-        style: el("style").value,
-        length: el("length").value,
-        extras: el("extras").value
-      });
-      el("output").value = msg;
-    }
+  const msg = buildMessage({
+    name: el("name").value,
+    age: el("age").value,
+    hobby: el("hobby").value,
+    style: el("style").value,
+    length: el("length").value,
+    extras: el("extras").value
+  });
 
+  el("preview").textContent = msg;
+  el("output").value = msg;
+  confettiBurst();
+}
+
+    el("themeToggle").addEventListener("change", (e) => {
+  document.body.classList.toggle("pastel", e.target.checked);
+});
     el("generate").addEventListener("click", generate);
     el("regen").addEventListener("click", generate);
     el("shuffle").addEventListener("click", () => generate());
@@ -340,5 +431,6 @@
     el("hobby").value = "golf";
     generate();
   </script>
+  <canvas id="confetti" style="position:fixed; inset:0; pointer-events:none;"></canvas>
 </body>
 </html>
